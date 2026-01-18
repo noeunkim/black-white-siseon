@@ -1,63 +1,184 @@
-import Image from "next/image";
+'use client';
+
+import { ComparisonView } from '@/components/ComparisonView';
+import { ProgressView } from '@/components/ProgressView';
+import { SearchInput } from '@/components/SearchInput';
+import { Sidebar } from '@/components/Sidebar';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { ArticleData, HistoryItem, SearchResult, StreamEvent, StreamEventType } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function Home() {
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [currentStep, setCurrentStep] = useState<StreamEventType>('start');
+  const [progressMessage, setProgressMessage] = useState('');
+  const [proArticles, setProArticles] = useState<ArticleData[]>([]);
+  const [conArticles, setConArticles] = useState<ArticleData[]>([]);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const response = await fetch('/api/history');
+      if (response.ok) {
+        const data = await response.json();
+        setHistory(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const handleSearch = async (query: string) => {
+    setIsLoading(true);
+    setSearchResult(null);
+    setCurrentStep('start');
+    setProgressMessage('분석을 시작합니다...');
+    setProArticles([]);
+    setConArticles([]);
+
+    try {
+      const response = await fetch('/api/search/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No reader available');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event: StreamEvent = JSON.parse(line.slice(6));
+              
+              setCurrentStep(event.type);
+              setProgressMessage(event.message);
+
+              if (event.type === 'search_pro_done' && event.data) {
+                const data = event.data as { articles: ArticleData[] };
+                setProArticles(data.articles);
+              }
+
+              if (event.type === 'search_con_done' && event.data) {
+                const data = event.data as { articles: ArticleData[] };
+                setConArticles(data.articles);
+              }
+
+              if (event.type === 'complete' && event.data) {
+                const data = event.data as { result: SearchResult };
+                setSearchResult(data.result);
+                setCurrentSearchId(data.result.id);
+                await fetchHistory();
+              }
+
+              if (event.type === 'error') {
+                throw new Error(event.message);
+              }
+            } catch (parseError) {
+              console.error('Parse error:', parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('검색 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectSearch = async (id: string) => {
+    try {
+      const response = await fetch(`/api/history/${id}`);
+      if (response.ok) {
+        const result = await response.json();
+        setSearchResult(result);
+        setCurrentSearchId(id);
+      }
+    } catch (error) {
+      console.error('Failed to load search:', error);
+    }
+  };
+
+  const handleNewSearch = () => {
+    setSearchResult(null);
+    setCurrentSearchId(null);
+    setProArticles([]);
+    setConArticles([]);
+  };
+
+  const handleDeleteSearch = async (id: string) => {
+    try {
+      await fetch(`/api/history?id=${id}`, { method: 'DELETE' });
+      if (currentSearchId === id) {
+        setSearchResult(null);
+        setCurrentSearchId(null);
+      }
+      await fetchHistory();
+    } catch (error) {
+      console.error('Failed to delete search:', error);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar
+        history={history}
+        currentSearchId={currentSearchId}
+        onSelectSearch={handleSelectSearch}
+        onNewSearch={handleNewSearch}
+        onDeleteSearch={handleDeleteSearch}
+      />
+
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          {isLoading ? (
+            <ProgressView
+              currentStep={currentStep}
+              message={progressMessage}
+              proArticles={proArticles}
+              conArticles={conArticles}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ) : searchResult ? (
+            <ComparisonView result={searchResult} />
+          ) : (
+            <WelcomeScreen />
+          )}
+        </div>
+
+        <div className="p-4 border-t border-border bg-background">
+          <SearchInput
+            onSubmit={handleSearch}
+            isLoading={isLoading}
+            placeholder={
+              searchResult
+                ? '다른 주제를 검색하세요...'
+                : '뉴스 URL 또는 주제를 입력하세요...'
+            }
+          />
         </div>
       </main>
     </div>
