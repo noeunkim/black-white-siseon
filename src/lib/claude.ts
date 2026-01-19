@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+const apiKey = process.env.ANTHROPIC_API_KEY || 'missing-key-for-build';
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+  apiKey,
 });
 
 export interface AnalyzedArticle {
@@ -89,7 +90,7 @@ JSON만 출력:`,
   }
 
   const result = JSON.parse(jsonMatch[0]) as SearchQueryAnalysis;
-  
+
   result.supportingSearchQuery = result.supportingSearchQuery.slice(0, 50);
   result.opposingSearchQuery = result.opposingSearchQuery.slice(0, 50);
   result.topic = result.topic.slice(0, 30);

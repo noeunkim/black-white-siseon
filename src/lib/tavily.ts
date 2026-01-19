@@ -1,7 +1,8 @@
 import { tavily } from '@tavily/core';
 import { extractSource } from './scraper';
 
-const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY! });
+const apiKey = process.env.TAVILY_API_KEY || 'missing-key-for-build';
+const tavilyClient = tavily({ apiKey });
 
 export interface TavilyResult {
   title: string;
@@ -46,7 +47,7 @@ function isValidResult(result: { title: string; url: string; content: string }):
   if (!hasKoreanTitle) return false;
 
   const url = result.url.toLowerCase();
-  
+
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     return true;
   }
@@ -70,7 +71,7 @@ export async function searchKoreanNews(
   maxResults: number = 6
 ): Promise<TavilyResult[]> {
   const safeQuery = truncateQuery(query, 80);
-  
+
   const response = await tavilyClient.search(safeQuery, {
     searchDepth: 'advanced',
     maxResults: maxResults * 2,
