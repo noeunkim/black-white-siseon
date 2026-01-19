@@ -1,0 +1,146 @@
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9f9f9;
+  --bg-tertiary: #f0f0f0;
+  
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  
+  --border-light: #e5e5e5;
+  --border-medium: #d4d4d4;
+  
+  --accent-black: #000000;
+  --accent-white: #ffffff;
+  
+  /* Semantic Colors */
+  --pro-color: #222222; /* Minimalist representation of side A */
+  --con-color: #222222; /* Minimalist representation of side B */
+  
+  --max-width: 1100px;
+  --radius: 8px;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Merriweather", serif; /* Fallback if not loaded */
+}
+
+@media (prefers-color-scheme: dark) {
+  /* 
+     We are adhering to the "Black & White" aesthetic.
+     For now, let's keep it strictly Light Mode with High Contrast 
+     as requested by the "Heukbaek" (Black/White) theme, 
+     but slightly inverted for actual system dark mode to prevent glare.
+  */
+  :root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-tertiary: #1a1a1a;
+    
+    --text-primary: #ededed;
+    --text-secondary: #a1a1a1;
+    --text-tertiary: #666666;
+    
+    --border-light: #333333;
+    --border-medium: #444444;
+    
+    --accent-black: #ffffff;
+    --accent-white: #000000;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Utilities */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-light);
+  display: inline-block;
+}
+
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--text-primary);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent-black);
+  color: var(--accent-white);
+  border: 1px solid var(--accent-black);
+}
+
+.btn-primary:hover {
+  background: transparent;
+  color: var(--accent-black);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
